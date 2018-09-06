@@ -2,7 +2,6 @@ import pygame
 import random
 
 from game import Game
-from mathgen import TwoPoint
 
 
 WIDTH = 1024
@@ -10,7 +9,7 @@ HEIGHT = 1024
 
 MAX_SIZE = 4
 SPEED = 10
-STARS = 2048
+STARS = 4096
 STAR_COLOR = (255, 255, 255)
 
 
@@ -31,7 +30,8 @@ def map_value(percent, min_value=0, max_value=100):
 class Star:
     def __init__(self):
         self.x, self.y = self.random_point()
-        self.z = random.randrange(WIDTH)
+        self.z = random.randrange(1, 2 * WIDTH)
+        self.pz = self.z
 
     @classmethod
     def random_point(cls):
@@ -40,23 +40,31 @@ class Star:
         return x, y
 
     def update(self, speed=1):
+        self.pz = self.z
+
         self.z -= speed
         if self.z < 1:
             self.x, self.y = self.random_point()
-            self.z = WIDTH
-        elif self.z > WIDTH:
+            self.z = 2 * WIDTH
+            self.pz = self.z
+        elif self.z > 2 * WIDTH:
             self.x, self.y = self.random_point()
             self.z = 1
+            self.pz = self.z
 
     def draw(self, window):
+        if self.z > WIDTH:
+            return
+
         x = int(map_value(self.x / self.z, max_value=WIDTH))
         y = int(map_value(self.y / self.z, max_value=HEIGHT))
         r = int(map_value(self.z / WIDTH, MAX_SIZE, 0))
 
-        # if r < 0:
-        #     r = 0
-
         pygame.draw.circle(window, STAR_COLOR, translate(x, y), r)
+
+        px = int(map_value(self.x / self.pz, max_value=WIDTH))
+        py = int(map_value(self.y / self.pz, max_value=HEIGHT))
+        pygame.draw.line(window, STAR_COLOR, translate(px, py), translate(x, y))
 
 
 class Starfield(Game):
