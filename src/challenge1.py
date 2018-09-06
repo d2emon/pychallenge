@@ -9,7 +9,7 @@ WIDTH = 1024
 HEIGHT = 1024
 
 MAX_SIZE = 4
-SPEED = 50
+SPEED = 10
 STARS = 2048
 STAR_COLOR = (255, 255, 255)
 
@@ -44,11 +44,17 @@ class Star:
         if self.z < 1:
             self.x, self.y = self.random_point()
             self.z = WIDTH
+        elif self.z > WIDTH:
+            self.x, self.y = self.random_point()
+            self.z = 1
 
     def draw(self, window):
         x = int(map_value(self.x / self.z, max_value=WIDTH))
         y = int(map_value(self.y / self.z, max_value=HEIGHT))
         r = int(map_value(self.z / WIDTH, MAX_SIZE, 0))
+
+        # if r < 0:
+        #     r = 0
 
         pygame.draw.circle(window, STAR_COLOR, translate(x, y), r)
 
@@ -58,13 +64,22 @@ class Starfield(Game):
         super().__init__("Caustic", (WIDTH, HEIGHT))
 
         self.stars = [Star() for _ in range(STARS)]
+        self.speed = SPEED
 
     def draw(self):
         super().draw()
 
         for star in self.stars:
-            star.update(SPEED)
+            star.update(self.speed)
             star.draw(self.window)
+
+    def key_event(self, keys):
+        if keys[pygame.K_UP]:
+            self.speed += 1
+        if keys[pygame.K_DOWN]:
+            self.speed -= 1
+        if keys[pygame.K_SPACE]:
+            self.speed = 0
 
 
 def main():

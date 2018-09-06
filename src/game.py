@@ -32,6 +32,7 @@ class Game:
 
             # Controlling keys
             keys = pygame.key.get_pressed()
+            self.key_event(keys)
 
             if keys[pygame.K_ESCAPE]:
                 self.quit()
@@ -39,6 +40,9 @@ class Game:
             self.draw()
 
             pygame.display.update()
+
+    def key_event(self, keys):
+        pass
 
     def draw(self):
         # Background
