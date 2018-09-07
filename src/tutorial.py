@@ -2,7 +2,7 @@ import pygame
 import time
 import random
 
-from game.game import Game, Screen, Button, STATE_GAME_OVER, STATE_RUN
+from game.game import Game, Screen, Button, STATE_GAME_OVER, STATE_RUN, STATE_PAUSED, STATE_QUIT
 from game.resource import Resource
 
 
@@ -96,7 +96,7 @@ class Car:
 
 
 class GreenButton(Button):
-    def __init__(self, game):
+    def __init__(self):
         super().__init__()
         self.rect = (50, HEIGHT - 100, 100, 50)
         self.caption = "GO!"
@@ -106,7 +106,7 @@ class GreenButton(Button):
 
 
 class RedButton(Button):
-    def __init__(self, game):
+    def __init__(self):
         super().__init__()
         self.rect = (WIDTH - 150, HEIGHT - 100, 100, 50)
         self.caption = "Quit"
@@ -115,15 +115,25 @@ class RedButton(Button):
         self.color = RED
 
 
+class PauseButton(Button):
+    def __init__(self):
+        super().__init__()
+        self.rect = (50, HEIGHT - 100, 100, 50)
+        self.caption = "Continue"
+
+        self.hover_color = BRIGHT_GREEN
+        self.color = GREEN
+
+
 class Intro(Screen):
     def __init__(self, game):
         super().__init__(game, 15)
         self.bg_color = WHITE
 
-        green_button = GreenButton(self.game)
+        green_button = GreenButton()
         green_button.action = self.start
 
-        red_button = RedButton(self.game)
+        red_button = RedButton()
         red_button.action = self.quit
 
         self.buttons = [
@@ -140,9 +150,11 @@ class Intro(Screen):
         for button in self.buttons:
             button.draw(window)
 
-    def mouse_event(self, pos, pressed):
-        for button in self.buttons:
-            button.mouse_event(pos, pressed)
+    def start(self):
+        self.game.state = STATE_RUN
+
+    def quit(self):
+        self.game.state = STATE_QUIT
 
 
 class MainScreen(Screen):
@@ -172,41 +184,78 @@ class MainScreen(Screen):
         self.dodged(self.thing.count)
 
         if self.car.state == self.car.STATE_GAME_OVER:
-            self.game_over()
+            self.game.state = STATE_GAME_OVER
 
     def key_event(self, keys):
         if keys[pygame.K_RIGHT]:
             self.car.move(self.car.RIGHT)
         if keys[pygame.K_LEFT]:
             self.car.move(self.car.LEFT)
-
-    def game_over(self):
-        pos = WIDTH / 2, HEIGHT / 2
-        self.message(self.large_text, "Game Over", pos, BLACK)
-
-        self.game.game_over()
+        if keys[pygame.K_p]:
+            self.game.state = STATE_PAUSED
 
     def dodged(self, count):
         text = self.sys_font.render("Dodged: {}".format(count), True, BLACK)
         self.game.window.blit(text, (0, 0))
 
 
+class Pause(Screen):
+    def __init__(self, game):
+        super().__init__(game, 15)
+        self.bg_color = None
+
+        button = PauseButton()
+        button.action = self.unpause
+
+        self.buttons = [
+            button,
+        ]
+
+    def draw(self, window):
+        super().draw(window)
+
+        pos = WIDTH / 2, HEIGHT / 2
+        self.message(self.large_text, "Pause", pos, BLACK)
+
+        for button in self.buttons:
+            button.draw(window)
+
+    def unpause(self):
+        self.game.state = STATE_RUN
+
+
+class Crash(Screen):
+    def __init__(self, game):
+        super().__init__(game, 15)
+        self.bg_color = None
+
+    def draw(self, window):
+        super().draw(window)
+
+        pos = WIDTH / 2, HEIGHT / 2
+        self.message(self.large_text, "Game Over", pos, BLACK)
+        pygame.display.update()
+
+    def after(self):
+        time.sleep(2)
+        self.game.state = STATE_RUN
+
+        self.game.main_screen = MainScreen(self.game)
+
+
 class Tutorial(Game):
     def __init__(self):
         super().__init__(CAPTION, (WIDTH, HEIGHT))
-        Resource.load({
+        Resource.load_images({
+            'icon': "res/racecar.png",
             'car': "res/racecar.png",
         })
+        pygame.display.set_icon(Resource.image('icon'))
 
-        self.intro = Intro(self)
-        self.main = MainScreen(self)
-
-    def game_over(self):
-        super().game_over()
-        time.sleep(2)
-
-        self.main = MainScreen(self)
-        self.state == STATE_RUN
+        self.intro_screen = Intro(self)
+        self.main_screen = MainScreen(self)
+        self.pause_screen = Pause(self)
+        self.game_over_screen = Crash(self)
 
 
 class TutorialScreen(Screen):

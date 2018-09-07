@@ -8,7 +8,8 @@ SCREEN_CAPTION = "Game"
 STATE_QUIT = 0
 STATE_INTRO = 1
 STATE_RUN = 2
-STATE_GAME_OVER = 3
+STATE_PAUSED = 3
+STATE_GAME_OVER = 4
 
 FPS = 30
 
@@ -68,19 +69,24 @@ class Screen:
         self.sys_font = pygame.font.SysFont(None, 25)
         self.large_text = pygame.font.Font('freesansbold.ttf', 50)
 
+        self.buttons = []
+
+    def after(self):
+        pass
+
     def show(self):
         self.clock.tick(self.fps)
 
         # Read events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                self.quit()
+                self.game.state = STATE_QUIT
             self.events(event)
 
         # Controlling keys
         keys = pygame.key.get_pressed()
         if keys[pygame.K_ESCAPE]:
-            self.quit()
+            self.game.state = STATE_QUIT
 
         self.key_event(keys)
         self.mouse_event(pygame.mouse.get_pos(), pygame.mouse.get_pressed())
@@ -90,8 +96,11 @@ class Screen:
         pygame.display.update()
         # pygame.display.flip()
 
+        self.after()
+
     def draw(self, window):
-        window.fill(self.bg_color)
+        if self.bg_color:
+            window.fill(self.bg_color)
 
     def events(self, event):
         pass
@@ -100,13 +109,8 @@ class Screen:
         pass
 
     def mouse_event(self, pos, pressed):
-        pass
-
-    def start(self):
-        self.game.state = STATE_RUN
-
-    def quit(self):
-        self.game.quit()
+        for button in self.buttons:
+            button.mouse_event(pos, pressed)
 
     def message(self, font, text, pos=(0, 0), color=(0, 0, 0)):
         surface = font.render(text, True, color)
@@ -123,24 +127,21 @@ class Game:
 
         self.state = STATE_INTRO
 
-        self.intro = Screen(self)
-        self.main = Screen(self)
+        self.intro_screen = Screen(self)
+        self.main_screen = Screen(self)
+        self.pause_screen = Screen(self)
+        self.game_over_screen = Screen(self)
 
     def play(self):
         while self.state != STATE_QUIT:
             while self.state == STATE_INTRO:
-                self.intro.show()
+                self.intro_screen.show()
             while self.state == STATE_RUN:
-                self.main.show()
-            if self.state == STATE_GAME_OVER:
-                self.state = STATE_RUN
-
-    def quit(self):
-        self.state = STATE_QUIT
-
-    def game_over(self):
-        self.state = STATE_GAME_OVER
-        pygame.display.update()
+                self.main_screen.show()
+            while self.state == STATE_PAUSED:
+                self.pause_screen.show()
+            while self.state == STATE_GAME_OVER:
+                self.game_over_screen.show()
 
 
 def main():
