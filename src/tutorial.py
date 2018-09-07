@@ -2,7 +2,7 @@ import pygame
 import time
 import random
 
-from game import Game, STATE_GAME_OVER
+from game import Game, Screen, Button, STATE_GAME_OVER, STATE_RUN, STATE_QUIT
 from resource import Resource
 
 
@@ -14,7 +14,12 @@ FPS = 60
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
-RED = (255, 0, 0)
+RED = (128, 0, 0)
+GREEN = (0, 128, 0)
+BLUE = (0, 0, 255)
+
+BRIGHT_GREEN = (0, 255, 0)
+BRIGHT_RED = (255, 0, 0)
 
 MIN_X = 32
 MAX_X = WIDTH - 32
@@ -90,23 +95,84 @@ class Car:
         self.state = self.STATE_GAME_OVER
 
 
-class Tutorial(Game):
-    def __init__(self):
-        super().__init__(CAPTION, (WIDTH, HEIGHT))
-        self.fps = FPS
+class GreenButton(Button):
+    def __init__(self, game):
+        super().__init__()
+        self.rect = (50, HEIGHT - 100, 100, 50)
+        self.caption = "GO!"
+
+        self.hover_color = BRIGHT_GREEN
+        self.color = GREEN
+
+
+class RedButton(Button):
+    def __init__(self, game):
+        super().__init__()
+        self.rect = (WIDTH - 150, HEIGHT - 100, 100, 50)
+        self.caption = "Quit"
+
+        self.hover_color = BRIGHT_RED
+        self.color = RED
+
+
+class Intro(Screen):
+    def __init__(self, game):
+        super().__init__(game, 15)
         self.bg_color = WHITE
-        Resource.load({
-            'car': "res/racecar.png",
-        })
+
+        green_button = GreenButton(self.game)
+        green_button.action = self.start
+
+        red_button = RedButton(self.game)
+        red_button.action = self.quit
+
+        self.buttons = [
+            green_button,
+            red_button,
+        ]
+
+    def draw(self, window):
+        super().draw(window)
+
+        pos = WIDTH / 2, HEIGHT / 2
+        self.message(self.large_text, "Race", pos, BLACK)
+
+        for button in self.buttons:
+            button.draw(window)
+
+    def mouse_event(self, pos, pressed):
+        for button in self.buttons:
+            button.mouse_event(pos, pressed)
+
+
+class MainScreen(Screen):
+    def __init__(self, game):
+        super().__init__(game, FPS)
+        self.bg_color = WHITE
 
         self.car = Car()
         self.thing = Thing()
 
-    def run(self):
+        self.start()
+
+    def start(self):
         self.car = Car()
         self.thing = Thing()
 
-        super().run()
+    def draw(self, window):
+        super().draw(window)
+
+        self.thing.move()
+        if self.car.collision(self.thing):
+            self.car.game_over()
+
+        self.car.draw(window, self.car.x, self.car.y)
+        self.thing.draw(window)
+
+        self.dodged(self.thing.count)
+
+        if self.car.state == self.car.STATE_GAME_OVER:
+            self.game_over()
 
     def key_event(self, keys):
         if keys[pygame.K_RIGHT]:
@@ -114,37 +180,72 @@ class Tutorial(Game):
         if keys[pygame.K_LEFT]:
             self.car.move(self.car.LEFT)
 
-    def draw(self):
-        super().draw()
-
-        self.thing.move()
-        if self.car.collision(self.thing):
-            self.car.game_over()
-
-        self.car.draw(self.window, self.car.x, self.car.y)
-        self.thing.draw(self.window)
-        self.dodged(self.thing.count)
-
-        if self.car.state == self.car.STATE_GAME_OVER:
-            self.game_over()
-
     def game_over(self):
         pos = WIDTH / 2, HEIGHT / 2
         self.message(self.large_text, "Game Over", pos, BLACK)
 
-        super().game_over()
-
-        time.sleep(2)
-        self.run()
+        self.game.game_over()
 
     def dodged(self, count):
         text = self.sys_font.render("Dodged: {}".format(count), True, BLACK)
-        self.window.blit(text, (0, 0))
+        self.game.window.blit(text, (0, 0))
+
+
+class Tutorial(Game):
+    def __init__(self):
+        super().__init__(CAPTION, (WIDTH, HEIGHT))
+        Resource.load({
+            'car': "res/racecar.png",
+        })
+
+        self.intro = Intro(self)
+        self.main = MainScreen(self)
+
+    def game_over(self):
+        super().game_over()
+        time.sleep(2)
+
+        self.main = MainScreen(self)
+        self.state == STATE_RUN
+
+
+class TutorialScreen(Screen):
+    def __init__(self, game):
+        super().__init__(game)
+        self.bg_color = BLACK
+
+    def draw(self, window):
+        super().draw(window)
+
+        pixels = pygame.PixelArray(window)
+
+        import math
+        for t in range(255):
+            t1 = t / 20
+            x1 = int(50 * math.cos(t1) + 255)
+            y1 = int(50 * math.sin(t1) + 255)
+            pixels[x1][y1] = (255, 128, 128)
+
+            t2 = t / 10
+            x2 = int(100 * math.cos(t2) + 255)
+            y2 = int(100 * math.sin(t2) + 255)
+            pixels[x2][y2] = (128, 128, 255)
+
+            pygame.draw.line(window, (255, 255, 255), (x1, y1), (x2, y2))
+
+        pixels[10][20] = GREEN
+        pixels[10][30] = RED
+        pixels[10][40] = BLUE
+
+        pygame.draw.line(window, BLUE, (100, 200), (300, 450), 5)
+        pygame.draw.rect(window, RED, (400, 400, 50, 25))
+        pygame.draw.circle(window, GREEN, (150, 150), 75)
+        pygame.draw.polygon(window, WHITE, ((25, 75), (76, 125), (250, 375)))
 
 
 def main():
     game = Tutorial()
-    game.run()
+    game.play()
     pygame.quit()
 
 
