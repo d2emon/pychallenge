@@ -2,8 +2,8 @@ import pygame
 import time
 import random
 
-from game import Game, Screen, Button, STATE_GAME_OVER, STATE_RUN, STATE_QUIT
-from resource import Resource
+from game.game import Game, Screen, Button, STATE_GAME_OVER, STATE_RUN
+from game.resource import Resource
 
 
 WIDTH = 512
