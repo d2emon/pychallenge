@@ -22,7 +22,8 @@ class Game:
         self.clock = pygame.time.Clock()
         self.fps = fps
 
-        self.large_text = pygame.font.Font('freesansbold.ttf', 115)
+        self.sys_font = pygame.font.SysFont(None, 25)
+        self.large_text = pygame.font.Font('freesansbold.ttf', 50)
 
         self.state = STATE_RUN
 

@@ -1,5 +1,6 @@
 import pygame
 import time
+import random
 
 from game import Game, STATE_GAME_OVER
 from resource import Resource
@@ -17,6 +18,35 @@ RED = (255, 0, 0)
 
 MIN_X = 32
 MAX_X = WIDTH - 32
+
+
+class Thing:
+    def __init__(self):
+        self.x = random.randrange(WIDTH)
+        self.y = -600
+        self.width = 100
+        self.height = 100
+
+        self.speed = 8
+
+        self.color = BLACK
+
+        self.count = 0
+
+    def draw(self, window):
+        pygame.draw.rect(window, self.color, (self.x, self.y, self.width, self.height))
+
+    def reset(self):
+        self.y = -self.height
+        self.x = random.randrange(WIDTH)
+
+    def move(self):
+        self.y += self.speed
+        if self.y > HEIGHT:
+            self.count += 1
+            # self.speed += 1
+            self.width += (self.count * 1.2)
+            self.reset()
 
 
 class Car:
@@ -37,17 +67,27 @@ class Car:
 
         self.state = self.STATE_PLAY
 
-    def turn(self, direction):
+    def move(self, direction):
         if direction == self.LEFT:
             self.x -= self.SPEED
         elif direction == self.RIGHT:
             self.x += self.SPEED
 
+    def collision(self, thing):
         if self.x < MIN_X or self.x > MAX_X - self.width:
-            self.state = self.STATE_GAME_OVER
+            return True
+
+        if self.y >= thing.y + thing.height:
+            return False
+        if self.x + self.width < thing.x:
+            return False
+        return self.x < thing.x + thing.width
 
     def draw(self, window, x, y):
         window.blit(self.image, (x, y))
+
+    def game_over(self):
+        self.state = self.STATE_GAME_OVER
 
 
 class Tutorial(Game):
@@ -60,24 +100,33 @@ class Tutorial(Game):
         })
 
         self.car = Car()
+        self.thing = Thing()
 
     def run(self):
         self.car = Car()
+        self.thing = Thing()
+
         super().run()
 
     def key_event(self, keys):
         if keys[pygame.K_RIGHT]:
-            self.car.turn(self.car.RIGHT)
+            self.car.move(self.car.RIGHT)
         if keys[pygame.K_LEFT]:
-            self.car.turn(self.car.LEFT)
+            self.car.move(self.car.LEFT)
 
     def draw(self):
         super().draw()
 
-        if self.car.state == self.car.STATE_GAME_OVER:
-            self.game_over()
+        self.thing.move()
+        if self.car.collision(self.thing):
+            self.car.game_over()
 
         self.car.draw(self.window, self.car.x, self.car.y)
+        self.thing.draw(self.window)
+        self.dodged(self.thing.count)
+
+        if self.car.state == self.car.STATE_GAME_OVER:
+            self.game_over()
 
     def game_over(self):
         pos = WIDTH / 2, HEIGHT / 2
@@ -87,6 +136,10 @@ class Tutorial(Game):
 
         time.sleep(2)
         self.run()
+
+    def dodged(self, count):
+        text = self.sys_font.render("Dodged: {}".format(count), True, BLACK)
+        self.window.blit(text, (0, 0))
 
 
 def main():
