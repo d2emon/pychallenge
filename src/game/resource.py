@@ -4,6 +4,7 @@ import pygame
 class Resource:
     images = dict()
     sounds = dict()
+    musics = dict()
 
     @classmethod
     def load_images(cls, images):
@@ -18,4 +19,16 @@ class Resource:
     def load_sounds(cls, sounds):
         for sound, filename in sounds.items():
             cls.sounds[sound] = pygame.mixer.Sound(filename)
-            # cls.sounds[sound] = pygame.mixer.music(filename)
+
+    @classmethod
+    def sound(cls, sound):
+        return cls.sounds.get(sound)
+
+    @classmethod
+    def load_musics(cls, sounds):
+        for sound, filename in sounds.items():
+            cls.musics[sound] = pygame.mixer.music(filename)
+
+    @classmethod
+    def music(cls, music):
+        return cls.musics.get(music)
