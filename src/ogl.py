@@ -12,6 +12,25 @@ WIDTH = 800
 HEIGHT = 600
 
 
+class Ground:
+    vertices = (
+        (-10, -.1, 20),
+        (10, -.1, 20),
+        (-10, -.1, -300),
+        (10, -.1, -300),
+    )
+    color = (0, .5, .5)
+
+    def draw(self):
+        # glBegin(GL_LINES)
+        glBegin(GL_QUADS)
+
+        for vertex in self.vertices:
+            glColor3fv(self.color)
+            glVertex3fv(vertex)
+        glEnd()
+
+
 class Cube:
     base_vertices = (
         (1, -1, -1),
@@ -73,10 +92,10 @@ class Cube:
         (1, 1, 1),
     )
 
-    def __init__(self, max_distance=50):
+    def __init__(self, z=0, max_distance=50):
         dx = random.randrange(-10, 10)
         dy = random.randrange(-10, 10)
-        dz = random.randrange(-max_distance, -20)
+        dz = z - random.randrange(20, max_distance)
 
         self.vertices = []
         for x, y, z in self.base_vertices:
@@ -120,13 +139,15 @@ class Tutorial(Game3D):
 
         gluPerspective(45, (WIDTH/HEIGHT), .1, 50.0)
 
+        self.ground = Ground()
+        self.last = 0
         self.restart()
         glRotatef(0, 0, 0, 0)
 
-    def restart(self):
-        self.cubes = [Cube() for _ in range(16)]
+    def restart(self, z=0):
+        self.last -= 50
+        self.cubes = [Cube(z) for _ in range(16)]
         glTranslatef(.0, .0, -15.0)
-
 
     def draw(self):
         super().draw()
@@ -136,17 +157,18 @@ class Tutorial(Game3D):
         camera_y = x[3][1]
         camera_z = x[3][2]
 
-        if (-1 < camera_x < 1) and (-1 < camera_y < 1) and (-1 < camera_z < 1):
-            print("CRASH")
-        if camera_z < -1:
-            print("Avoided")
-            glTranslatef(-camera_x, -camera_y, -camera_z)
-            self.restart()
+        if (self.last < camera_x < self.last - 2) and (self.last < camera_y < self.last - 2) and (self.last < camera_z < self.last - 2):
+            print("CRASH", (camera_x, camera_y, camera_y))
+        if camera_z < self.last:
+            print("Avoided", camera_z)
+            # glTranslatef(-camera_x, -camera_y, -camera_z)
+            self.restart(camera_z)
 
         glTranslatef(.0, .0, .05)
 
         # glRotatef(1, 3, 1, 1)
 
+        self.ground.draw()
         for cube in self.cubes:
             cube.draw()
 
